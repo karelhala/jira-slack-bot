@@ -21,3 +21,11 @@ const app = new App({
 
   console.log('⚡️ Bolt app is running!');
 })();
+
+app.event('message', async ({ event, client, context }) => {
+  console.log('I was called!', event, client, context);
+});
+
+app.event('app_mention', async ({ event, client, context }) => {
+  console.log('I was mentioned!', event, client, context);
+});
