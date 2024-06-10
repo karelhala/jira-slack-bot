@@ -1,4 +1,5 @@
 module.exports = (project, issueTypes) => ({
+  private_metadata: `{\"project\":\"${project}\"}`,
   title: {
     type: 'plain_text',
     text: `${project} - issue`
@@ -7,6 +8,7 @@ module.exports = (project, issueTypes) => ({
     type: 'input',
     dispatch_action: true,
     block_id: 'issue_type_select',
+    optional: true,
     label: {
       type: 'plain_text',
       text: 'Issue type'
@@ -29,6 +31,7 @@ module.exports = (project, issueTypes) => ({
   }, {
     type: 'input',
     block_id: 'summary',
+    optional: true,
     label: {
       type: 'plain_text',
       text: 'Summary'
@@ -44,7 +47,7 @@ module.exports = (project, issueTypes) => ({
     block_id: 'description',
     label: {
       type: 'plain_text',
-      text: 'Summary'
+      text: 'description'
     },
     element: {
       type: 'rich_text_input',
@@ -53,6 +56,7 @@ module.exports = (project, issueTypes) => ({
   },
   {
     type: "input",
+    optional: true,
     block_id: 'label_search',
     element: {
       type: "multi_external_select",

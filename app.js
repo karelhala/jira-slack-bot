@@ -1,7 +1,7 @@
 // Require the Bolt package (github.com/slackapi/bolt)
 const { App } = require("@slack/bolt");
 const { config } = require('dotenv');
-const { JiraBot } = require('./jira');
+const { JiraBot, richTextFormatter: jiraRichTextFormatter } = require('./jira');
 const frontendBug = require('./templates/frontendBug');
 
 config();
@@ -21,9 +21,9 @@ const jira = new JiraBot(process.env.JIRA_STAGE_TOKEN, 'https://issues.stage.red
   // Start your app
   await app.start(process.env.PORT || 3000);
   
-  app.event('message', async ({ event, client, context }) => {
-    console.log('I was called!', event, client, context);
-  });
+  // app.event('message', async ({ event, client, context }) => {
+  //   console.log('I was called!', event, client, context);
+  // });
   
   // app.event('app_mention', async ({ event, client, context }) => {
   //   console.log('I was mentioned!', event, client, context);
@@ -223,14 +223,18 @@ app.options({ action_id: 'epic_search' }, async ({ ack, body }) => {
 
 app.view('view_1', async ({ ack, body, view, client, logger }) => {
   ack();
+
   const values = Object.values(view.state.values).map((item) => {
     const currKey = Object.keys(item)[0];
-    const currValue = item[currKey].value || item[currKey].selected_option?.value || item[currKey].selected_options;
+    let currValue = item[currKey].value || item[currKey].selected_option?.value || item[currKey].selected_options;
+    if (item[currKey].rich_text_value) {
+      console.log(JSON.stringify(item[currKey].rich_text_value));
+      // currValue = jiraRichTextFormatter(item[currKey].rich_text_value)
+    }
     return ({
       [currKey]: Array.isArray(currValue) ? currValue.map(({value}) => value) : currValue
-    })})
-  console.log(JSON.stringify(values, null, 3));
-  console.log('submit called!');
+    })});
+  // jira.createIssue([ ...values, ...[JSON.parse(view.private_metadata)] ].reduce((acc, curr) => ({...acc, ...curr}), {}));
 })
 // Listen for a button invocation with action_id `button_abc` (assume it's inside of a modal)
 app.action('button_abc', async ({ ack, body, client, logger }) => {
