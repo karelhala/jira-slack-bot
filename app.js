@@ -17,6 +17,28 @@ const app = new App({
 
 const jira = new JiraBot(process.env.JIRA_STAGE_TOKEN, 'https://issues.stage.redhat.com', 'http://squid.corp.redhat.com:3128');
 
+// Post a message to a channel your app is in using ID and message text
+async function publishMessage({id, text, user, blocks}) {
+  try {
+    // Call the chat.postMessage method using the built-in WebClient
+    const result = await app.client.chat.postEphemeral({
+      // The token you used to initialize your app
+      token: process.env.SLACK_BOT_TOKEN,
+      channel: id,
+      text,
+      user,
+      blocks,
+      // You could also use a blocks[] array to send richer content
+    });
+
+    // Print result, which includes information about the message (like TS)
+    console.log(result);
+  }
+  catch (error) {
+    console.error(error);
+  }
+}
+
 (async () => {
   // Start your app
   await app.start(process.env.PORT || 3000);
@@ -178,7 +200,7 @@ app.command('/ticket', async ({ack, body, client, logger}) => {
       view: {
         type: 'modal',
         callback_id: 'view_1',
-        ...frontendBug(project, allIssuTypes.values),
+        ...frontendBug(project, allIssuTypes.values, body.channel_name, body.user_id),
       }
     });
 
@@ -224,17 +246,22 @@ app.options({ action_id: 'epic_search' }, async ({ ack, body }) => {
 app.view('view_1', async ({ ack, body, view, client, logger }) => {
   ack();
 
+  const privateMetadata = JSON.parse(view.private_metadata);
   const values = Object.values(view.state.values).map((item) => {
     const currKey = Object.keys(item)[0];
     let currValue = item[currKey].value || item[currKey].selected_option?.value || item[currKey].selected_options;
     if (item[currKey].rich_text_value) {
-      console.log(JSON.stringify(item[currKey].rich_text_value));
-      // currValue = jiraRichTextFormatter(item[currKey].rich_text_value)
+      currValue = jiraRichTextFormatter(item[currKey].rich_text_value)
     }
     return ({
       [currKey]: Array.isArray(currValue) ? currValue.map(({value}) => value) : currValue
     })});
-  // jira.createIssue([ ...values, ...[JSON.parse(view.private_metadata)] ].reduce((acc, curr) => ({...acc, ...curr}), {}));
+  const ticket = await jira.createIssue([ ...values, ...[privateMetadata] ].reduce((acc, curr) => ({...acc, ...curr}), {}));
+  publishMessage({
+    id: privateMetadata.channel_name,
+    text: `Hey! I've create new JIRA ticket <${ticket.self}|${ticket.key}> for you!`,
+    user: privateMetadata.user_id
+  })
 })
 // Listen for a button invocation with action_id `button_abc` (assume it's inside of a modal)
 app.action('button_abc', async ({ ack, body, client, logger }) => {

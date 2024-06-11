@@ -1,5 +1,5 @@
-module.exports = (project, issueTypes) => ({
-  private_metadata: `{\"project\":\"${project}\"}`,
+module.exports = (project, issueTypes, channel_name, user_id) => ({
+  private_metadata: `{\"project\":\"${project}\", \"channel_name\": \"${channel_name}\", \"user_id\": \"${user_id}\"}`,
   title: {
     type: 'plain_text',
     text: `${project} - issue`

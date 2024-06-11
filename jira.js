@@ -31,7 +31,14 @@ function JiraBot(token, baseUrl, proxy) {
     ...proxy && {agent: proxyAgent},
     "method": method,
     ...data ? {body: data} : {}
-  }).then(async (data) => await data.json());
+  }).then(async (data) => {
+    if (data.status === 200) {
+      return await data.json();
+    } else {
+      console.log(data.statusText);
+      return {};
+    }
+  });
   this.token = token;
   this.baseUrl = baseUrl;
   this.fetcher = fetcher;
@@ -78,38 +85,42 @@ JiraBot.prototype.createIssue = async function (data) {
   }
   console.log(JSON.stringify(jiraData));
   try {
-    this.fetcher(ISSUE, {}, 'POST', JSON.stringify(jiraData))
+    return this.fetcher(ISSUE, {}, 'POST', JSON.stringify(jiraData));
   } catch (e) {
     console.log(e);
   }
 }
 
-const richTextFormatter = (data) => {
-  console.log('I am here!');
-  let formatter = {
-    bold: (value) => `*${value}*`,
-    italic: (value) => `_${value}_`,
-    strike: (value) => `-${value}-`,
-    rich_text_quote: (value) => `{quote}${value}{quote}`,
-    link: (value, href) => {
-      if (!/http[s]:\/\//.test(href))
-      {
-        return `[${value}|http://${href}]`
-      }
-      return `[${value}|${href}]`
-    },
-    code: (value) => `{noformat}\n${value}\n{noformat}`,
-  }
-  let formatMapper = (text, style) => {
-    return Object.keys(style).reduce((acc, curr) => {
-        return formatter[curr](acc)
-    }, text)
-  }
-  return data.elements.map(({type, elements}) => {
+const formatter = {
+  bold: (value) => `*${value}*`,
+  italic: (value) => `_${value}_`,
+  strike: (value) => `-${value}-`,
+  rich_text_quote: (value) => `{quote}${value}{quote}`,
+  link: (value, href) => {
+    if (!/http[s]:\/\//.test(href))
+    {
+      return `[${value}|http://${href}]`
+    }
+    return `[${value}|${href}]`
+  },
+  code: (value) => `{noformat}\n${value}\n{noformat}`,
+}
+const formatMapper = (text, style) => {
+  return Object.keys(style).reduce((acc, curr) => {
+      return formatter[curr]?.(acc) || `${curr}${acc}`;
+  }, text)
+}
+
+const richTextFormatter = (data, prepend) => {
+  return data.elements.map(({type = '', elements, style = '', indent = 0}) => {
+    if (type === 'rich_text_list') {
+        return richTextFormatter({ elements, type: '', style: '' }, style === 'bullet' ? `${'*'.repeat(indent + 1)} ` : `${'#'.repeat(indent + 1)} `);
+    }
     return elements.map((item) => formatMapper(item.type === 'link' ? formatter.link(item.text, item.url) : item.text, {
             ...type === 'rich_text_quote' ? {rich_text_quote: true} : {},
             ...type === 'rich_text_preformatted' ? {code: true} : {},
             ...item.style || {},
+            ...prepend ? { [prepend]: true } : {},
         })).join('\n')
 }).join('\n')
 }
