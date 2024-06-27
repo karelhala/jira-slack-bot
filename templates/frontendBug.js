@@ -8,7 +8,6 @@ module.exports = (project, issueTypes, channel_name, user_id) => ({
     type: 'input',
     dispatch_action: true,
     block_id: 'issue_type_select',
-    optional: true,
     label: {
       type: 'plain_text',
       text: 'Issue type'
@@ -31,7 +30,6 @@ module.exports = (project, issueTypes, channel_name, user_id) => ({
   }, {
     type: 'input',
     block_id: 'summary',
-    optional: true,
     label: {
       type: 'plain_text',
       text: 'Summary'
@@ -85,7 +83,7 @@ module.exports = (project, issueTypes, channel_name, user_id) => ({
     },
     label: {
       type: "plain_text",
-      text: "Label",
+      text: "Epic link",
     },
   }],
   submit: {

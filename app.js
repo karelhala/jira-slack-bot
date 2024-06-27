@@ -6,6 +6,8 @@ const frontendBug = require('./templates/frontendBug');
 
 config();
 
+const JIRA_URL = process.env.IS_PROD ? 'https://issues.redhat.com' : 'https://issues.stage.redhat.com';
+
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   signingSecret: process.env.SLACK_SIGNING_SECRET,
@@ -15,7 +17,7 @@ const app = new App({
 
 // All the room in the world for your code
 
-const jira = new JiraBot(process.env.JIRA_STAGE_TOKEN, 'https://issues.stage.redhat.com', 'http://squid.corp.redhat.com:3128');
+const jira = new JiraBot(process.env.IS_PROD ? process.env.JIRA_TOKEN : process.env.JIRA_STAGE_TOKEN, JIRA_URL, process.env.IS_PROD ? '' : process.env.PROXY_URL);
 
 // Post a message to a channel your app is in using ID and message text
 async function publishMessage({id, text, user, blocks}) {
@@ -259,7 +261,7 @@ app.view('view_1', async ({ ack, body, view, client, logger }) => {
   const ticket = await jira.createIssue([ ...values, ...[privateMetadata] ].reduce((acc, curr) => ({...acc, ...curr}), {}));
   publishMessage({
     id: privateMetadata.channel_name,
-    text: `Hey! I've create new JIRA ticket <${ticket.self}|${ticket.key}> for you!`,
+    text: `Hey! I've create new JIRA ticket <${JIRA_URL}/browse/${ticket.key}|${ticket.key}> for you!`,
     user: privateMetadata.user_id
   })
 })

@@ -20,7 +20,10 @@ const replacer = (string, replaceWith) => {
 }
 
 function JiraBot(token, baseUrl, proxy) {
-  const proxyAgent = new HttpsProxyAgent(proxy);
+  let proxyAgent;
+  if (proxy) {
+    proxyAgent = new HttpsProxyAgent(proxy);
+  }
   const fetcher = (url, urlParams, method = 'GET', data) => nodeFetch(`${baseUrl}${replacer(url, urlParams)}`, {
     "credentials": "include",
     "headers": {
@@ -32,9 +35,10 @@ function JiraBot(token, baseUrl, proxy) {
     "method": method,
     ...data ? {body: data} : {}
   }).then(async (data) => {
-    if (data.status === 200) {
+    if (data.status === 200 || data.status === 201) {
       return await data.json();
     } else {
+      console.log(data);
       console.log(data.statusText);
       return {};
     }
